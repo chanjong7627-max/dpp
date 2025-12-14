@@ -70,7 +70,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- Updated Probes Data (Sorted Chronologically) ---
+// --- Updated Probes Data (Sorted Chronologically & Standardized Specs) ---
         const probesData = [
           { 
             id: 'pioneer', 
@@ -80,7 +80,7 @@
             mission: 'Jupiter & Solar Escape', 
             description: '인류 최초로 위험한 소행성대를 통과하고 목성을 근접 탐사하여 외행성 탐사의 가능성을 증명한 기념비적인 우주선입니다. 이 탐사선은 태양계를 벗어나는 궤도에 진입한 최초의 인공물로서 외계 지적 생명체에게 보내는 메시지가 담긴 금속판을 품은 채, 2003년 마지막 교신을 끝으로 현재 황소자리의 알데바란을 향해 영원한 항해를 지속하고 있습니다.', 
             image: 'pic/pioneer_a.png', 
-            specs: [{ label: 'STATUS', value: 'LOST SIGNAL' }, { label: 'LAUNCH', value: '1972.03.02' }, { label: 'DIST', value: '133.04 AU' }], 
+            specs: [{ label: 'STATUS', value: 'LOST SIGNAL' }, { label: 'LAUNCH', value: '1972.03.02' }, { label: 'LOC', value: '133.04 AU' }], 
             gallery: ['pic/pioneer_1.png', 'pic/pioneer_2.png', 'pic/pioneer_3.png', 'pic/pioneer_4.png', 'pic/pioneer_5.png'] 
           },
           { 
@@ -91,7 +91,7 @@
             mission: 'Mars Landing', 
             description: '붉은 행성, 화성에 착륙하여 생명체의 흔적을 찾은 최초의 성공적인 미션입니다. 화성 표면의 고해상도 컬러 사진을 지구로 전송하여 화성의 황량한 풍경을 인류에게 처음으로 생생하게 전달했습니다.', 
             image: 'pic/viking_a.png', 
-            specs: [{ label: 'STATUS', value: 'RETIRED' }, { label: 'LAUNCH', value: '1975.08.20' }, { label: 'RESULT', value: 'SUCCESS' }], 
+            specs: [{ label: 'STATUS', value: 'RETIRED' }, { label: 'LAUNCH', value: '1975.08.20' }, { label: 'LOC', value: 'MARS SURFACE' }], 
             gallery: ['pic/viking_1.png', 'pic/viking_2.png', 'pic/viking_3.png', 'pic/viking_4.png', 'pic/viking_5.png'] 
           },
           { 
@@ -113,7 +113,7 @@
             mission: 'Jupiter Orbiter', 
             description: '목성 궤도에 진입하여 장기간 머물며 목성의 대기와 위성들을 정밀 관측했습니다. 특히 유로파의 얼음 표면 아래 거대한 바다가 존재할 가능성을 제시하여 외계 생명체 탐사의 새로운 지평을 열었습니다.', 
             image: 'pic/galileo_a.png', 
-            specs: [{ label: 'STATUS', value: 'DEORBITED' }, { label: 'LAUNCH', value: '1989.10.18' }, { label: 'ORBIT', value: 'JUPITER' }], 
+            specs: [{ label: 'STATUS', value: 'DEORBITED' }, { label: 'LAUNCH', value: '1989.10.18' }, { label: 'LOC', value: 'JUPITER ORBIT' }], 
             gallery: ['pic/galileo_1.png', 'pic/galileo_2.png', 'pic/galileo_3.png', 'pic/galileo_4.png', 'pic/galileo_5.png'] 
           },
           { 
@@ -124,7 +124,7 @@
             mission: 'Deep Space Optics', 
             description: '지구 대기의 간섭을 피해 우주 궤도에 올려진 대형 광학 망원경입니다. 지난 30년이 넘는 시간 동안 우주의 나이를 측정하고 블랙홀의 존재를 확인하는 등 천문학 교과서를 다시 쓰게 만든 인류의 눈입니다.', 
             image: 'pic/hubble_a.png', 
-            specs: [{ label: 'STATUS', value: 'OPERATIONAL' }, { label: 'LAUNCH', value: '1990.04.24' }, { label: 'ORBIT', value: 'LOW EARTH' }], 
+            specs: [{ label: 'STATUS', value: 'OPERATIONAL' }, { label: 'LAUNCH', value: '1990.04.24' }, { label: 'LOC', value: 'LOW EARTH ORBIT' }], 
             gallery: ['pic/hubble_1.png', 'pic/hubble_2.png', 'pic/hubble_3.png', 'pic/hubble_4.png', 'pic/hubble_5.png'] 
           },
           { 
@@ -146,7 +146,7 @@
             mission: 'Mars Rover', 
             description: '스피릿의 쌍둥이 로버로, 당초 예상 수명인 90일을 훌쩍 넘겨 무려 15년 가까이 화성 표면을 누비며 마라톤 거리보다 긴 거리를 주행했습니다. 화성의 과거에 물이 존재했다는 결정적인 지질학적 증거들을 발견했습니다.', 
             image: 'pic/opportunity_a.png', 
-            specs: [{ label: 'STATUS', value: 'RETIRED' }, { label: 'LAUNCH', value: '2003.07.07' }, { label: 'DIST', value: '45.16 KM' }], 
+            specs: [{ label: 'STATUS', value: 'RETIRED' }, { label: 'LAUNCH', value: '2003.07.07' }, { label: 'LOC', value: 'MERIDIANI PLANUM' }], 
             gallery: ['pic/opportunity_1.png', 'pic/opportunity_2.png', 'pic/opportunity_3.png', 'pic/opportunity_4.png', 'pic/opportunity_5.png'] 
           },
           { 
@@ -157,7 +157,7 @@
             mission: 'Pluto & Kuiper Belt', 
             description: '태양계의 변방인 명왕성을 탐사하기 위해 발사된 가장 빠른 탐사선 중 하나입니다. 2015년 명왕성에 근접하여 하트 모양의 평원을 발견했고, 이후 카이퍼 벨트의 소행성 아로코스(Arrokoth)를 근접 촬영하는 데 성공했습니다.', 
             image: 'pic/horizons_a.png', 
-            specs: [{ label: 'STATUS', value: 'HIBERNATION' }, { label: 'LAUNCH', value: '2006.01.19' }, { label: 'TARGET', value: 'KUIPER BELT' }], 
+            specs: [{ label: 'STATUS', value: 'HIBERNATION' }, { label: 'LAUNCH', value: '2006.01.19' }, { label: 'LOC', value: 'KUIPER BELT' }], 
             gallery: ['pic/horizons_1.png', 'pic/horizons_2.png', 'pic/horizons_3.png', 'pic/horizons_4.png', 'pic/horizons_5.png'] 
           },
           { 
@@ -179,7 +179,7 @@
             mission: 'Touch the Sun', 
             description: '인류 역사상 태양에 가장 가까이 접근하는 탐사선입니다. 섭씨 1,000도가 넘는 고열과 방사선을 견디며 태양의 대기인 코로나 속을 비행하여 태양풍의 가속 원리와 코로나 가열의 비밀을 풀고 있습니다.', 
             image: 'pic/parker_a.png', 
-            specs: [{ label: 'STATUS', value: 'OPERATIONAL' }, { label: 'LAUNCH', value: '2018.08.12' }, { label: 'TARGET', value: 'SUN CORONA' }], 
+            specs: [{ label: 'STATUS', value: 'OPERATIONAL' }, { label: 'LAUNCH', value: '2018.08.12' }, { label: 'LOC', value: 'SUN CORONA' }], 
             gallery: ['pic/parker_1.png', 'pic/parker_2.png', 'pic/parker_3.png', 'pic/parker_4.png', 'pic/parker_5.png'] 
           },
           { 
@@ -212,7 +212,7 @@
             mission: 'Ocean World Explorer', 
             description: '목성의 위성 유로파를 정밀 탐사하기 위해 설계된 최신 탐사선입니다. 유로파의 두꺼운 얼음 껍질 아래 존재하는 지하 바다의 특성을 파악하고, 생명체가 서식할 수 있는 환경인지를 조사하기 위해 먼 여정을 떠났습니다.', 
             image: 'pic/europa_a.png', 
-            specs: [{ label: 'STATUS', value: 'EN ROUTE' }, { label: 'LAUNCH', value: '2024.10.14' }, { label: 'TARGET', value: 'EUROPA' }], 
+            specs: [{ label: 'STATUS', value: 'EN ROUTE' }, { label: 'LAUNCH', value: '2024.10.14' }, { label: 'LOC', value: 'EUROPA' }], 
             gallery: ['pic/europa_1.png', 'pic/europa_2.png', 'pic/europa_3.png', 'pic/europa_4.png', 'pic/europa_5.png'] 
           }
         ];
@@ -319,7 +319,7 @@
             );
         };
 
-        const StoryGrid = ({ probeName, gallery }) => {
+       const StoryGrid = ({ probeName, gallery }) => {
             const sectionRef = useRef(null);
             const [isVisible, setIsVisible] = useState(false);
             useEffect(() => {
@@ -342,7 +342,7 @@
                     <div className="py-12 w-full max-w-[1600px] md:pr-12">
                         <div className="flex items-end justify-between mb-8 border-b border-white/10 pb-4">
                             <div>
-                                <span className="text-xs font-terminal text-orange-500 block mb-2">/ VISUAL_DATABASE</span>
+                                {/* 삭제됨: / VISUAL_DATABASE 텍스트 */}
                                 <h3 className="text-2xl font-header-sci text-white">MISSION LOGS</h3>
                             </div>
                             <span className="text-xs font-terminal text-gray-600 tracking-widest hidden md:block">REF_ID: {probeName.toUpperCase()}</span>
@@ -376,7 +376,7 @@
                                         <GlitchText text={probe.name} isActive={isActive} speed={60} />
                                     </h2>
                                     <p className="text-sm md:text-base text-orange-500 font-ui-sci tracking-widest uppercase mt-4 flex items-center gap-3">
-                                        <span className="w-8 h-px bg-orange-500"></span>
+                                        {/* 삭제됨: 주황색 가로줄 */}
                                         {probe.mission}
                                     </p>
                                 </div>
@@ -405,7 +405,7 @@
                                     
                                     <div className="absolute bottom-10 right-10 z-20 hidden md:block">
                                          <div className="font-terminal text-[10px] text-orange-500 text-right space-y-1">
-                                            <p>SCAN_COMPLETE: 100%</p>
+                                            <p></p>
                                         </div>
                                     </div>
                                 </div>
