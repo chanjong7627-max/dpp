@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA Space Probes</title>
+    
+    <!-- 1. Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. React & ReactDOM CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- 3. Babel (JSX를 브라우저가 이해하도록 변환) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 폰트 로드 (Pretendard 추가) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Michroma&family=Gowun+Dodum&display=swap');
+        
+        body { font-family: 'Rajdhani', sans-serif; }
+        .font-mono-sci { font-family: 'Rajdhani', sans-serif; }
+        .font-header-sci { font-family: 'Michroma', sans-serif; letter-spacing: 0.05em; }
+        .font-terminal { font-family: 'Gowun Dodum', sans-serif; letter-spacing: -0.02em; }
+        .font-pretendard { font-family: 'Pretendard', sans-serif; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.5); border-radius: 2px; }
+
+        @keyframes rain { 0% { transform: translateY(-100%); } 100% { transform: translateY(200%); } }
+        .animate-rain { animation: rain 2s linear infinite; }
+        
+        @keyframes revealImage {
+          0% { clip-path: inset(0 0 100% 0); }
+          100% { clip-path: inset(0 0 0 0); }
+        }
+
+        @keyframes moveLaser {
+          0% { top: 0; opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+
+        @keyframes drawVertical {
+          0% { height: 0; top: 0; opacity: 0; }
+          20% { opacity: 1; }
+          100% { height: 100%; top: 0; opacity: 1; }
+        }
+        .animate-draw-vertical {
+            animation: drawVertical 1.5s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+        }
+        
+        @keyframes scanFast {
+            0% { top: -100%; }
+            100% { top: 200%; }
+        }
+        .animate-scan-fast { animation: scanFast 1.5s linear infinite; }
+
+        /* Earth Rotation Animation (Slow) */
+        @keyframes earthSpin {
+            0% { transform: rotate(0deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1.1); }
+        }
+        .animate-earth-spin {
+            animation: earthSpin 400s linear infinite;
+        }
+
+        /* Scanline Gradient Animation (Background Position Move) - Top to Bottom */
+        @keyframes scanlineGradientMove {
+            0% { background-position: 50% -100%; }
+            100% { background-position: 50% 200%; }
+        }
+
+        /* Static Noise Animation */
+        @keyframes staticNoise {
+            0% { background-position: 0 0; }
+            100% { background-position: 100% 100%; }
+        }
+
+        .scan-active img {
+          clip-path: inset(0 0 100% 0);
+          animation: revealImage 2s linear forwards;
+        }
+
+        .scan-active .noise-overlay {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            animation: 
+                revealImage 2s linear forwards,
+                staticNoise 0.3s steps(5) infinite;
+        }
+
+        .scan-active::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          background: #f97316;
+          box-shadow: 0 0 10px #f97316, 0 0 20px #f97316;
+          z-index: 10;
+          animation: moveLaser 2s linear forwards;
+        }
+    </style>
+</head>
+<body class="bg-[#0B0B0E] text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Icons ---
+        const ChevronDown = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m6 9 6 6 6-6"/></svg>
+        );
+        const ImageIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        );
+
+        // --- Data ---
+        const probesData = [
+          {
+            id: 'pioneer',
+            index: '01',
+            name: 'PIONEER 10',
+            year: '1972',
+            mission: 'JUPITER & SOLAR ESCAPE',
+            description: '소행성대를 통과한 최초의 우주선. 목성을 근접 촬영하고 태양계 밖으로 나아간 인류의 첫 번째 사절단입니다.',
+            image: 'pic/pioneer_a.png', 
+            specs: [
+              { label: 'Status', value: 'Signal Lost' },
+              { label: 'Launch', value: 'March 2, 1972' },
+              { label: 'Dist', value: '133 AU' }
+            ],
+            gallery: [
+              'pic/pioneer_1.png',
+              'pic/pioneer_2.png',
+              'pic/pioneer_3.png',
+              'pic/pioneer_4.png',
+              'pic/pioneer_5.png'
+            ]
+          },
+          {
+            id: 'viking',
+            index: '02',
+            name: 'VIKING',
+            year: '1975',
+            mission: 'MARS LANDING',
+            description: '붉은 행성, 화성에 착륙하여 생명체의 흔적을 찾은 최초의 성공적인 미션입니다.',
+            image: 'pic/viking_a.png',
+            specs: [
+              { label: 'Status', value: 'Signal Lost' },
+              { label: 'Launch', value: 'Aug 20, 1975' },
+              { label: 'Result', value: 'Success' }
+            ],
+            gallery: [
+              'pic/viking_1.png',
+              'pic/viking_2.png',
+              'pic/viking_3.png',
+              'pic/viking_4.png',
+              'pic/viking_5.png'
+            ]
+          },
+          {
+            id: 'voyager',
+            index: '03',
+            name: 'VOYAGER',
+            year: '1977',
+            mission: 'THE GRAND TOUR',
+            description: '목성, 토성, 천왕성, 해왕성을 모두 방문하며 인류의 시야를 태양계 끝까지 확장했습니다.',
+            image: 'pic/voyager_a.png',
+            specs: [
+              { label: 'Status', value: 'Stable' },
+              { label: 'Launch', value: 'Sept 5, 1977' },
+              { label: 'Loc', value: 'Interstellar' }
+            ],
+            gallery: [
+              'pic/voyager_1.png',
+              'pic/voyager_2.png',
+              'pic/voyager_3.png',
+              'pic/voyager_4.png',
+              'pic/voyager_5.png'
+            ]
+          },
+          {
+            id: 'galileo',
+            index: '04',
+            name: 'GALILEO',
+            year: '1989',
+            mission: 'JUPITER ORBITER',
+            description: '목성의 대기 속으로 탐사정을 투하하고, 유로파의 얼음 바다 가능성을 제시했습니다.',
+            image: 'pic/galileo_a.png',
+            specs: [
+              { label: 'Status', value: 'Signal Lost' },
+              { label: 'Launch', value: 'Oct 18, 1989' },
+              { label: 'Orbit', value: 'Jupiter' }
+            ],
+            gallery: [
+              'pic/galileo_1.png',
+              'pic/galileo_2.png',
+              'pic/galileo_3.png',
+              'pic/galileo_4.png',
+              'pic/galileo_5.png'
+            ]
+          }
+        ];
+
+        // --- Components ---
+
+        const GlitchText = ({ text, isActive, speed = 60, onComplete, className = "" }) => {
+          const [displayedText, setDisplayedText] = useState('');
+          const [isGlitching, setIsGlitching] = useState(false);
+
+          useEffect(() => {
+            if (!isActive) {
+              setDisplayedText('');
+              return;
+            }
+
+            setDisplayedText('');
+            setIsGlitching(true);
+            
+            let currentIndex = 0;
+            const totalChars = text.length;
+            
+            const interval = setInterval(() => {
+              if (currentIndex <= totalChars) {
+                setDisplayedText(text.slice(0, currentIndex));
+                currentIndex++;
+              } else {
+                clearInterval(interval);
+                setIsGlitching(false);
+                if (onComplete) onComplete(); 
+              }
+            }, speed);
+
+            return () => {
+              clearInterval(interval);
+            };
+          }, [text, isActive, speed]); 
+
+          return (
+            <span className={`relative inline-block transition-colors duration-100 ${className} ${isGlitching ? 'text-orange-200/90 drop-shadow-[0_0_5px_rgba(255,165,0,0.8)]' : ''}`}>
+              {isActive ? displayedText : ''}
+              {isActive && isGlitching && (
+                 <span className="inline-block w-2 h-4 bg-orange-500 animate-pulse ml-1 align-middle"></span>
+              )}
+            </span>
+          );
+        };
+
+        const GallerySheet = ({ activeProbe, isOpen, setIsOpen, isVisible }) => {
+            if (!activeProbe || !isVisible) return null;
+
+            return (
+                <React.Fragment>
+                    <div 
+                        className={`fixed inset-0 bg-black/60 z-[90] transition-opacity duration-500 backdrop-blur-sm ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                        onClick={() => setIsOpen(false)}
+                    />
+
+                    <div className={`fixed bottom-0 left-0 w-full z-[100] transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] transform ${
+                        isOpen ? 'translate-y-0' : 'translate-y-full' 
+                    } h-[80vh]`}>
+                        
+                        <div 
+                            onClick={() => setIsOpen(!isOpen)}
+                            className="absolute -top-8 left-1/2 -translate-x-1/2 w-full max-w-sm h-8 flex flex-col items-center justify-end cursor-pointer group"
+                        >   
+                            <div className="w-40 h-full bg-[#0B0B0E]/80 backdrop-blur-md border-t border-x border-white/10 rounded-t-lg flex items-center justify-center relative overflow-hidden group-hover:bg-[#1a1a20]/90 transition-colors shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+                                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-orange-500 to-transparent opacity-70"></div>
+                                <span className="text-[10px] font-mono-sci tracking-[0.2em] text-gray-400 group-hover:text-white transition-colors mb-0.5">
+                                     MISSION LOG
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="w-full h-full bg-[#0B0B0E]/95 backdrop-blur-2xl border-t border-white/10 relative overflow-hidden">
+                            <div className="absolute inset-0 opacity-10 pointer-events-none" 
+                                style={{ 
+                                    backgroundImage: 'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)', 
+                                    backgroundSize: '40px 40px' 
+                                }}
+                            ></div>
+
+                            <div className="relative z-10 h-full flex flex-col max-w-7xl mx-auto">
+                                <div className="p-8 md:px-12 flex justify-between items-end border-b border-white/5">
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                                            <span className="text-orange-500 font-mono-sci text-xs tracking-[0.3em]">CLASSIFIED RECORDS</span>
+                                        </div>
+                                        <h3 className="text-2xl md:text-4xl font-header-sci text-white">
+                                            {activeProbe.name} <span className="text-gray-600">GALLERY</span>
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {activeProbe.gallery && activeProbe.gallery.map((img, idx) => (
+                                            <div 
+                                                key={idx} 
+                                                className="group relative aspect-[4/3] bg-white/5 overflow-hidden border border-white/5 hover:border-orange-500/50 transition-colors cursor-pointer"
+                                                style={{ animationDelay: `${idx * 100}ms` }}
+                                            >
+                                                <img 
+                                                    src={img} 
+                                                    alt={`Gallery ${idx}`} 
+                                                    className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" 
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                                    <span className="text-orange-500 text-[10px] font-mono-sci tracking-widest mb-1">IMG_SEQ_00{idx + 1}</span>
+                                                    <p className="text-white text-xs font-terminal">Declassified Visual Data</p>
+                                                </div>
+                                                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent -translate-y-full group-hover:animate-scan-fast pointer-events-none"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </React.Fragment>
+            );
+        };
+
+        const Hero = ({ onStart }) => (
+          // 높이를 150vh로 늘려 화면을 길게 하고 지구와 텍스트 공간 확보
+          <section className="relative h-[320vh] w-full flex flex-col justify-center items-center overflow-hidden bg-[#0B0B0E] text-white">
+            
+            {/* 지구 이미지: 회전 애니메이션 추가 (animate-earth-spin), 위치 하단 조정 (-bottom-[45vh]) */}
+            <div className="absolute top-auto -bottom-[-160vh] left-1/2 -translate-x-1/2 w-[133vh] h-[133vh] rounded-full shadow-[0_0_150px_rgba(50,100,255,0.25)] z-0 bg-black p-0 overflow-hidden border border-white/5">
+               <img 
+                 src="pic/main.png"
+                 alt="Full Earth"
+                 className="w-full h-full object-cover rounded-full opacity-40 animate-earth-spin"
+               />
+               <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-black/80 via-transparent to-transparent pointer-events-none"></div>
+            </div>
+
+            <div className="absolute inset-0 border-[20px] md:border-[40px] border-[#0B0B0E] z-10 pointer-events-none"></div>
+            <div className="absolute inset-8 md:inset-16 border border-white/10 z-10 pointer-events-none"></div>
+
+            {/* 메인 타이틀 및 설명 */}
+            <div className="relative z-20 text-center space-y-8 mt-[-190vh] px-4">
+              
+              <div className="flex justify-center">
+                  <img src="pic/title.png" alt="우주 탐사선 발전기" className="w-full max-w-2xl h-auto object-contain" />
+              </div>
+              
+              <p className="max-w-md mx-auto text-gray-400 text-xs md:text-sm leading-relaxed tracking-wide font-pretendard font-light">
+                우주 탐사선은 인류의 눈과 귀가 되어 태양계 너머 미지의 세계를<br/>
+                계속 개척해온 위대한 여정의 기록입니다.
+              </p>
+            </div>
+
+            {/* 추가된 설명 섹션: 지구 위쪽에 배치 */}
+            <div className="absolute bottom-[25%] flex flex-col items-center text-center space-y-6 px-4 animate-fadeIn">
+               <h2 className="text-4xl md:text-5xl font-pretendard font-semibold text-orange-500 tracking-tight">
+                 우주 탐사선
+               </h2>
+               <div className="w-24 h-px bg-white/50"></div>
+               <div className="space-y-2">
+                 <p className="text-xl md:text-2xl font-pretendard font-light text-white leading-relaxed">
+                   지구나 다른 천체를 탐사하기 위해<br/>
+                   우주로 쏘아 올린 관측도구를 말한다.
+                 </p>
+                 <p className="text-sm md:text-base font-pretendard font-light text-gray-400">
+                   (예시 :플라이바이 탐사선, 착륙선, 로버 등)
+                 </p>
+               </div>
+            </div>
+
+            <button 
+              onClick={onStart}
+              className="absolute bottom-32 z-30 flex flex-col items-center gap-3 text-gray-500 hover:text-white transition-colors cursor-pointer group"
+            >
+              <span className="text-[10px] tracking-widest uppercase group-hover:tracking-[0.3em] transition-all font-mono-sci">Explore Timeline</span>
+              <div className="w-px h-12 bg-gray-700 group-hover:bg-white transition-colors relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-white animate-rain"></div>
+              </div>
+            </button>
+          </section>
+        );
+
+        const TimelineNav = ({ activeId, scrollToId, isVisible }) => {
+          return (
+            <div className={`fixed left-4 md:left-8 top-0 bottom-0 flex flex-col justify-center z-50 transition-all duration-1000 ease-out ${
+              !isVisible ? 'pointer-events-none opacity-0 -translate-x-20' : 'opacity-100 translate-x-0'
+            }`}>
+              
+              <div className="relative flex flex-col gap-12 pointer-events-auto items-start">
+                <div className="absolute top-0 bottom-0 left-[7px] w-px bg-white/10 -z-10 overflow-hidden">
+                    {isVisible && (
+                        <div className="absolute top-0 left-0 w-full h-full bg-orange-500/50 animate-draw-vertical shadow-[0_0_10px_#f97316]"></div>
+                    )}
+                </div>
+                
+                {probesData.map((probe, idx) => {
+                  const isActive = activeId === probe.id;
+                  
+                  return (
+                    <button
+                      key={probe.id}
+                      onClick={() => scrollToId(probe.id)}
+                      className="group relative flex items-center gap-6"
+                      aria-label={`Scroll to ${probe.name}`}
+                    >
+                      <div className="w-4 h-4 flex items-center justify-center relative flex-shrink-0">
+                         <div className={`w-4 h-4 rounded-full border border-white/20 bg-[#0B0B0E] transition-all duration-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 box-border ${
+                          isActive ? 'border-orange-500 w-5 h-5' : 'group-hover:border-white'
+                        }`}></div>
+                        
+                        {isActive && (
+                          <>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full flex items-center justify-center">
+                              <div className="w-full h-full bg-orange-500/50 rounded-full animate-ping"></div>
+                            </div>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-orange-500 rounded-full z-10"></div>
+                          </>
+                        )}
+                      </div>
+
+                      <div className={`flex flex-col items-start transition-all duration-500 ${
+                        isActive ? 'opacity-100 translate-x-0' : 'opacity-40 -translate-x-2 group-hover:opacity-80 group-hover:translate-x-0'
+                      }`}>
+                        <span className="text-[10px] font-mono-sci text-gray-500 leading-none mb-1">{probe.index}</span>
+                        <span className={`text-xs font-bold tracking-widest uppercase whitespace-nowrap font-header-sci transition-colors ${
+                            isActive ? 'text-white text-sm scale-110 origin-left' : 'text-gray-500'
+                        }`}>
+                          <GlitchText 
+                              text={probe.name} 
+                              isActive={isVisible} 
+                              speed={(120 + idx * 20)} 
+                          />
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        };
+
+        const ProbeSection = ({ probe, isActive, isVisited }) => {
+          const [titleFinished, setTitleFinished] = useState(false);
+          const [descFinished, setDescFinished] = useState(false);
+
+          const speedMultiplier = isVisited ? 0.5 : 1;
+
+          useEffect(() => {
+            if (!isActive) {
+              setTitleFinished(false);
+              setDescFinished(false);
+            }
+          }, [isActive]);
+
+          return (
+            <div 
+              id={probe.id}
+              className="min-h-screen w-full flex items-center relative py-20 overflow-hidden" 
+            >
+              <div className={`w-full max-w-[1600px] mx-auto px-6 lg:pl-40 lg:pr-16 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-center relative z-10 transition-all duration-1000 ${
+                isActive ? 'opacity-100 translate-x-0 blur-0' : 'opacity-0 translate-x-20 blur-sm pointer-events-none'
+              }`}>
+                
+                <div className="space-y-8 min-w-0">
+                   <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-none min-h-[1.1em] font-header-sci tracking-wider">
+                     <GlitchText 
+                       text={probe.name} 
+                       isActive={isActive} 
+                       speed={100 * speedMultiplier} 
+                       onComplete={() => setTitleFinished(true)} 
+                     />
+                   </h2>
+
+                   <p className="text-lg md:text-xl text-white font-light tracking-wide italic font-mono-sci">
+                     "{probe.mission}"
+                   </p>
+
+                   <p className="text-gray-400 leading-relaxed max-w-md text-sm md:text-base min-h-[80px] md:min-h-[100px] font-terminal">
+                     <GlitchText 
+                        text={probe.description} 
+                        isActive={isActive && titleFinished} 
+                        speed={50 * speedMultiplier} 
+                        onComplete={() => setDescFinished(true)} 
+                     />
+                   </p>
+
+                   <div className="pt-8 space-y-4 max-w-xs">
+                      {probe.specs.map((spec, i) => {
+                        let valueClass = "text-white";
+                        if (spec.label === 'Status') {
+                            if (spec.value === 'Signal Lost') valueClass = "text-red-500 font-bold animate-pulse";
+                            else if (spec.value === 'Stable') valueClass = "text-green-500 font-bold";
+                        }
+
+                        return (
+                          <div key={i} className="flex justify-between text-sm border-b border-white/10 pb-2">
+                            <span className="text-gray-500 font-mono-sci">{spec.label}</span>
+                            <span className={`font-mono-sci ${valueClass}`}>
+                              <GlitchText 
+                                text={spec.value} 
+                                isActive={isActive && descFinished} 
+                                speed={80 * speedMultiplier}
+                                className={valueClass} 
+                              />
+                            </span>
+                          </div>
+                        );
+                      })}
+                   </div>
+                </div>
+
+                <div className="relative h-[40vh] md:h-[50vh] lg:h-[70vh] w-full flex items-center justify-center">
+                   <div className={`relative inline-block w-full h-full ${isActive ? 'scan-active' : ''}`}>
+                     <img 
+                       src={probe.image} 
+                       alt={probe.name}
+                       className="w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] block"
+                     />
+                     
+                     <div 
+                        className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-20"
+                        style={{
+                            background: 'linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.9) 10%, transparent 20%)',
+                            backgroundSize: '100% 200%',
+                            backgroundRepeat: 'no-repeat',
+                            maskImage: `url(${probe.image})`,
+                            maskSize: 'contain',
+                            maskPosition: 'center',
+                            maskRepeat: 'no-repeat',
+                            WebkitMaskImage: `url(${probe.image})`,
+                            WebkitMaskSize: 'contain',
+                            WebkitMaskPosition: 'center',
+                            WebkitMaskRepeat: 'no-repeat',
+                            animation: isActive ? 'scanlineGradientMove 3s linear infinite 2s' : 'none'
+                        }}
+                     ></div>
+
+                     <div 
+                       className="noise-overlay absolute inset-0 mix-blend-overlay opacity-10 pointer-events-none" 
+                       style={{
+                         maskImage: `url(${probe.image})`,
+                         maskSize: 'contain',
+                         maskPosition: 'center',
+                         maskRepeat: 'no-repeat',
+                         WebkitMaskImage: `url(${probe.image})`,
+                         WebkitMaskSize: 'contain',
+                         WebkitMaskPosition: 'center',
+                         WebkitMaskRepeat: 'no-repeat',
+                       }}
+                     ></div>
+                   </div>
+                </div>
+
+              </div>
+            </div>
+          );
+        };
+
+        const App = () => {
+          const [activeId, setActiveId] = useState('');
+          const [visited, setVisited] = useState(new Set()); 
+          const [showNav, setShowNav] = useState(false);
+          const [isGalleryOpen, setIsGalleryOpen] = useState(false); 
+          const observer = useRef(null);
+          const prevActiveIdRef = useRef(null);
+
+          const activeProbe = probesData.find(p => p.id === activeId);
+
+          const scrollToId = (id) => {
+            const element = document.getElementById(id);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          };
+
+          const handleStart = () => {
+            scrollToId(probesData[0].id);
+          };
+
+          useEffect(() => {
+            if (prevActiveIdRef.current && prevActiveIdRef.current !== activeId) {
+                setVisited(prev => new Set(prev).add(prevActiveIdRef.current));
+            }
+            prevActiveIdRef.current = activeId;
+          }, [activeId]);
+
+          useEffect(() => {
+            const options = {
+              root: null,
+              rootMargin: '0px',
+              threshold: 0.5
+            };
+
+            observer.current = new IntersectionObserver((entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  setActiveId(entry.target.id);
+                  setShowNav(true);
+                }
+              });
+            }, options);
+
+            const heroObserver = new IntersectionObserver((entries) => {
+               if (entries[0].isIntersecting) {
+                 setShowNav(false);
+                 setActiveId('');
+                 setIsGalleryOpen(false); 
+               }
+            }, { threshold: 0.5 });
+
+            const hero = document.getElementById('hero-section');
+            if (hero) heroObserver.observe(hero);
+
+            probesData.forEach((probe) => {
+              const el = document.getElementById(probe.id);
+              if (el) observer.current.observe(el);
+            });
+
+            return () => {
+              if (observer.current) observer.current.disconnect();
+              heroObserver.disconnect();
+            };
+          }, []);
+
+          return (
+            <div className="min-h-screen bg-[#0B0B0E] text-white font-sans selection:bg-orange-500 selection:text-white overflow-x-hidden">
+              <div id="hero-section" className="mb-64"> 
+                <Hero onStart={handleStart} />
+              </div>
+
+              <div className="relative">
+                <div className={`transition-opacity duration-500 ${showNav ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                   <TimelineNav 
+                      activeId={activeId} 
+                      scrollToId={scrollToId} 
+                      isVisible={showNav}
+                   />
+                </div>
+
+                {probesData.map((probe) => (
+                  <ProbeSection 
+                    key={probe.id} 
+                    probe={probe} 
+                    isActive={activeId === probe.id}
+                    isVisited={visited.has(probe.id)}
+                  />
+                ))}
+
+                <GallerySheet 
+                    activeProbe={activeProbe} 
+                    isOpen={isGalleryOpen} 
+                    setIsOpen={setIsGalleryOpen} 
+                    isVisible={!!activeProbe}
+                />
+
+                <footer className="py-12 border-t border-white/5 text-center text-gray-600 text-xs tracking-widest uppercase font-mono-sci">
+                  <p>© 2024 NASA Space Exploration History</p>
+                </footer>
+              </div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
