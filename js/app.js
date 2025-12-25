@@ -108,7 +108,7 @@ const App = () => {
         <div className="relative w-full h-screen overflow-hidden bg-[#0B0C0E]">
             <StarBackground />
             {viewPhase === 2 && showMobileDetail && (
-                <button onClick={() => setShowMobileDetail(false)} className="fixed top-6 right-6 z-[100] md:hidden px-4 py-2 bg-black/80 border border-orange-500 rounded-sm text-orange-500 font-terminal text-xs">⋯</button>
+                <button onClick={() => setShowMobileDetail(false)} className="fixed top-6 right-6 z-[100] md:hidden px-4 py-2 bg-black/80 border border-orange-500 rounded-sm text-orange-500 font-terminal text-xs">↶</button>
             )}
             <div className="w-full h-full page-transition relative z-10" style={{ transform: `translateY(-${viewPhase * 100}vh)` }}>
                 <div className="w-full h-screen relative"><Hero onNext={() => handlePhaseChange(1)} /></div>
